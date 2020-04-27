@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>a2 Academia Prueba</title>
+    <link rel="stylesheet" href="../assets/css/jquery-ui.min.css">
+    <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="text-center my-3">
+            <h2>a2 Academia Prueba</h2>
+            <p>php & AJAX <strong>CRUD</strong> usando el dialogBox de jQuery UI</p>
+        </header>
+        
+        <div class="text-right mt-5 mb-2">
+            <button type="button" name="add" class="btn btn-success btn-sm" id="add">
+                Nuevo
+            </button>
+        </div>
+
+        <div class="text-center my-4">
+            <button type="button" name="showOrHide" class="btn btn-secondary btn-sm" id="showOrHide">
+                Mostrar
+            </button>
+        </div>
+
+        <div id="crud" class="table-responsive" style="display:none;">
+            <!-- ../assets/fetch.php -->
+        </div>
+    </div>
+
+    <div id="user_dialog" title="Insertar Datos">
+        <form id="user_form" class="d-none" method="post">
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" name="first_name" id="first_name" class="form-control">
+                <span id="first_name_err" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label>Apellido</label>
+                <input type="text" name="last_name" id="last_name" class="form-control">
+                <span id="last_name_err" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label>Fecha de Nacimiento</label>
+                <input type="date" name="born_date" id="born_date" class="form-control">
+                <span id="born_date_err" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="hidden" name="action" id="action" value="insert">
+                <input type="hidden" name="hidden_id" id="hidden_id">
+                <input type="submit" name="form_action" id="form_action" class="btn btn-info float-right" value="Agregar">
+            </div>
+        </form>
+    </div>
+
+    <div id="action_alert" class="d-none" title="Acción">
+        <!-- ALERTA AL INTERACTUAR -->
+    </div>
+
+    <div id="delete_confirmation" class="d-none" title="Confirmación">
+        <p>Estás seguro que quieres eliminar este usuario?</p>
+    </div>
+    <script src="../js/jquery.lastest.min.js"></script>
+    <script src="../js/jquery-ui.min.js"></script>
+</body>
+</html>
+<script>
+    $(document).ready(function(){
+
+        load_data();
+        function load_data(){
+            $.post({
+                url:"../assets/fetch.php",
+                method:"POST",
+                success:function(data){
+                    $('#crud').html(data);
+                }
+            });
+        }
+
+        $('#user_form').removeClass('d-none');
+        $('#delete_confirmation').removeClass('d-none');
+        $('#action_alert').removeClass('d-none');
+
+        
+        $('#user_dialog').dialog({
+            autoOpen: false,
+            width:400
+        }); 
+
+        $('#showOrHide').click(function(){
+            if ($('#showOrHide').html() == 'Mostrar')
+            {
+                $('#showOrHide').html('Ocultar');
+                $('#crud').slideDown(300);
+            }
+            else
+            {
+                $('#showOrHide').html('Mostrar');
+                $('#crud').slideUp(300);
+            }
+        });
+
+        $('#add').click(function(){
+            $('#user_dialog').attr('title','Agregar Usuario');
+            $('#action').val('insert');
+            $('#form_action').val('Agregar');
+            $('#user_form')[0].reset();
+            $('#form_action').attr('disabled',false);
+            $('#user_dialog').dialog('open');
+        });
+
+        $('#user_form').on('submit', function(e){
+            e.preventDefault();
+            var first_name_err = '';
+            var last_name_err = '';
+            var born_date_err = '';
+            if ($('#first_name').val() == '') // Nombre
+            {
+                first_name_err = 'Nombre es obligatorio...';
+                $('#first_name_err').text(first_name_err);
+                $('#first_name').css('border-color','#cc0000');
+            }
+            else
+            {
+                first_name_err = '';
+                $('#first_name_err').text(first_name_err);
+                $('#first_name').css('border-color','');
+            }
+
+            // Apellido
+            if ($('#last_name').val() == '') 
+            {
+                last_name_err = 'Apellido es obligatorio...';
+                $('#last_name_err').text(last_name_err);
+                $('#last_name').css('border-color','#cc0000');
+            }
+            else
+            {
+                last_name_err = '';
+                $('#last_name_err').text(last_name_err);
+                $('#last_name').css('border-color','');
+            }
+
+            // Fecha
+            if ($('#born_date').val() == '') 
+            {
+                born_date_err = 'Fecha de Nacimiento obligatoria...';
+                $('#born_date_err').text(born_date_err);
+                $('#born_date').css('border-color','#cc0000');
+            }
+            else
+            {
+                born_date_err = '';
+                $('#born_date_err').text(born_date_err);
+                $('#born_date').css('border-color','');
+            }
+
+            //
+            if (first_name_err != '' || last_name_err != '' || born_date_err != '')
+            {
+                return false;
+            }
+            else
+            {
+                $('#form_action').attr('disabled','disabled');
+                var form_data = $(this).serialize();
+                $.ajax({
+                   type:"POST",
+                   url:"../assets/action.php",
+                   data:form_data,
+                   success:function(data){
+                        $('#user_dialog').dialog('close');
+                        $('#action_alert').html(data);
+                        $('#action_alert').dialog('open');
+                        load_data();
+                   } 
+                });
+                return false;
+            }
+        });
+
+        $('#action_alert').dialog({
+            autoOpen:false
+        });
+
+        
+        $(document).on('click', '.edit', function(){
+            $('#form_action').attr('disabled', false);
+            var id = $(this).attr("id");
+            var action = 'fetch_single';
+            $.ajax({
+                type:"POST",
+                url:"../assets/action.php",
+                data:{id:id, action:action},
+                dataType:"json",
+                success:function(data){
+                    $('#first_name').val(data.first_name);
+                    $('#last_name').val(data.last_name);
+                    $('#born_date').val(data.born_date);
+                    $('#user_dialog').attr('title', 'Modificar Usuario');
+                    $('#action').val('update');
+                    $('#hidden_id').val(id);
+                    $('#form_action').val('Modificar');
+                    $('#user_dialog').dialog('open');
+                }
+            });
+        });
+
+        $('#delete_confirmation').dialog({
+            autoOpen: false,
+            modal: true,
+            buttons:{
+                Ok: function(){
+                    var id = $(this).data("id");
+                    var action = 'delete';
+                    $.ajax({
+                       url:"../assets/action.php",
+                       method:"POST",
+                       data:{id:id, action:action},
+                       success:function(data){
+                           $('#delete_confirmation').dialog('close');
+                           $('#action_alert').html(data);
+                           $('#action_alert').dialog('open');
+                           load_data();
+                       } 
+                    });
+                },
+                Cancelar: function(){
+                    $(this).dialog('close');
+                }
+            }
+        });
+
+        $(document).on('click', '.delete', function(){
+            var id = $(this).attr("id");
+            $('#delete_confirmation').data('id',id).dialog('open');
+        });
+
+    });
+</script>

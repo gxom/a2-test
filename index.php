@@ -1,0 +1,3 @@
+<?php //index.php
+    header("location: public/main.html"); //Redireccionando...
+?>
